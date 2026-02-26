@@ -16,8 +16,8 @@ class CustomerCreditLimit(models.Model):
     active = fields.Boolean(default=True)
     note = fields.Text()
 
-    total_due = fields.Monetary(compute="_compute_total_due", currency_field="currency_id")
-    remaining_credit = fields.Monetary(compute="_compute_remaining_credit", currency_field="currency_id")
+    total_due = fields.Monetary(compute="_compute_total_due", store=True, currency_field="currency_id")
+    remaining_credit = fields.Monetary(compute="_compute_remaining_credit", store=True,currency_field="currency_id")
 
     @api.depends("partner_id")
     def _compute_total_due(self):
