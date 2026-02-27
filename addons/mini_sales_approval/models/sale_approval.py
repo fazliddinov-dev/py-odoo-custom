@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 class SaleApprovalRequest(models.Model):
     _name = 'sale.approval.request'
@@ -29,18 +30,17 @@ class SaleApprovalRequest(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('sale.approval.request') or _('New')
         return super().create(vals_list)
 
-    def action_submit(self):
-        self.state = 'submitted'
-
     def action_approve(self):
         for record in self:
             record.write({
                 'state': 'approved',
                 'approved_by': self.env.user
             })
-            # Orderni tasdiqlash jarayonini chaqiramiz (cheksiz sikldan qochish uchun context bilan)
-            if record.sale_order_id and record.sale_order_id.state in ['draft', 'sent']:
+            if record.sale_order_id:
                 record.sale_order_id.with_context(skip_approval=True).action_confirm()
 
     def action_reject(self):
-        self.state = 'rejected'
+        for record in self:
+            if not record.reject_reason:
+                raise ValidationError(_("Iltimos, rad etish sababini yozing!"))
+            record.state = 'rejected'

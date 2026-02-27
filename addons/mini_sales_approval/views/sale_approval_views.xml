@@ -20,9 +20,6 @@
         <field name="arch" type="xml">
             <form string="Approval Request">
                 <header>
-                    <button name="action_submit" type="object" string="Submit" 
-                            invisible="state != 'draft'" class="btn-primary"/>
-                    
                     <button name="action_approve" type="object" string="Approve" 
                             invisible="state != 'submitted'" class="btn-success" 
                             groups="sales_team.group_sale_manager"/>
@@ -38,14 +35,16 @@
                         <h1><field name="name"/></h1>
                     </div>
                     <group>
-                        <group>
-                            <field name="sale_order_id" readonly="state != 'draft'"/>
-                            <field name="requested_by"/>
-                            <field name="total_amount"/>
+                        <group string="Order Info">
+                            <field name="sale_order_id" readonly="1"/>
+                            <field name="requested_by" readonly="1"/>
+                            <field name="total_amount" readonly="1"/>
                         </group>
-                        <group>
+                        <group string="Decision">
                             <field name="approved_by" invisible="state != 'approved'"/>
-                            <field name="reject_reason" invisible="state != 'rejected'" required="state == 'rejected'"/>
+                            <field name="reject_reason" 
+                                   invisible="state not in ['submitted', 'rejected']" 
+                                   required="state == 'rejected'"/>
                         </group>
                     </group>
                 </sheet>
