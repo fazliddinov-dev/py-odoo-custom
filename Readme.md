@@ -1,37 +1,5 @@
-# Customer Credit Control System
 
-Ushbu Odoo moduli mijozlarning kredit limitlarini boshqarish va limit oshib ketganda sotuv buyurtmalarini avtomatik bloklash uchun mo'ljallangan.
-
-## 🚀 Loyiha maqsadi
-
-Kompaniya mijozlariga qarz asosida savdo qilishda xavfsizlikni ta'minlash:
-
-* Mijozlar uchun individual kredit limitlarini belgilash.
-* Buxgalteriya (Accounting) bilan integratsiya qilib, real vaqtdagi qarzdorlikni hisoblash.
-* Sotuv (Sales) jarayonida limitdan oshish holatlarini bloklash.
-
-## 🛠 Texnik imkoniyatlar
-
-* **Custom Model**: `customer.credit.limit` modeli orqali limitlarni boshqarish.
-* **Dynamic Calculation**:
-* `Total Due`: To'lanmagan invoice'lar summasi.
-* `Remaining Credit`: $Limit - (Eski Qarz + Yangi Buyurtma)$.
-
-
-* **Role-Based Access (RBAC)**:
-* `Manager`: Limitlarni yaratish, tahrirlash va o'chirish.
-* `User`: Limitlarni faqat ko'rish (Read-only).
-
-
-* **Validation**: Sotuv buyurtmasini tasdiqlashda `ValidationError` mexanizmi.
-
-## 📦 O'rnatish va Run qilish
-
-### 1. Modulni joylashtirish
-
-Modul papkasini Odoo-ning `extra-addons` direktoriyasiga joylashtiring.
-
-### 2. Docker muhitida ishga tushirish
+# Docker muhitida ishga tushirish
 
 
 
@@ -39,31 +7,60 @@ Modul papkasini Odoo-ning `extra-addons` direktoriyasiga joylashtiring.
 docker compose up -d 
 ```
 
-### 3. Odoo UI orqali faollashtirish
+# Customer Credit Control System (Odoo 19)
 
-1. **Settings** -> **Activate Developer Mode** ni yoqing.
-2. **Apps** menyusiga kiring.
-3. **Update Apps List** tugmasini bosing.
-4. Qidiruvga `Customer Credit Control` deb yozing va **Activate** tugmasini bosing.
+Ushbu modul mijozlarga qarz limitlari asosida savdo qilish imkonini beradi va limitdan oshib ketish holatlarini avtomatik nazorat qiladi.
 
-## 🧪 Sinovdan o'tkazish (Testing)
+## 🚀 Asosiy Imkoniyatlar
+- **Kredit Limit Modeli**: Har bir hamkor (Partner) uchun alohida kredit limitlari belgilash.
+- **Buxgalteriya Integratsiyasi**: Mijozning to'lanmagan (Posted, Unpaid) invoice summasini real-vaqtda hisoblash (`total_due`).
+- **Savdo Nazorati**: Savdo buyurtmasini (Sale Order) tasdiqlashda mijozning joriy qarzi va yangi buyurtma summasini limitga solishtirish.
+- **Smart Info**: Sale Order formasida qoldiq kredit (Remaining Credit) haqida ma'lumot va ogohlantirish (Alert) tizimi.
 
-1. **Security**: Foydalanuvchi sozlamalarida o'zingizga `Credit Control: Manager` huquqini bering.
-2. **Limit**: Biror mijoz uchun $1,000$ limit o'rnating va `Active` qiling.
-3. **Sales**: Yangi `Sale Order` yarating. Summa $1,000$ dan oshsa, tizim bloklashini tekshiring.
-4. **Accounting**: Mijoz uchun invoice yarating va tasdiqlang. `Remaining Credit` avtomatik kamayishini kuzating.
+## 🛠 Model va Mantiq
+- **customer.credit.limit**:
+  - `partner_id`: Mijoz (res.partner).
+  - `credit_limit`: Mijozga berilgan maksimal qarz miqdori.
+  - `total_due`: Mijozning joriy qarzi (Invoice summalari).
+  - `remaining_credit`: Limitdan qolgan qoldiq summa.
+- **Constraint**: Bitta mijoz uchun faqat bitta faol (active) kredit limit bo'lishi mumkin.
+- **Action Confirmation**: Agar `total_due + sale.amount_total > credit_limit` bo'lsa, Odoo `ValidationError` qaytaradi.
 
----
+## 🔐 Xavfsizlik (Security)
+- **Accounting Manager**: Limit yaratish va tahrirlash huquqiga ega.
+- **Sales User**: Faqat limitlarni ko'rish imkoniyatiga ega.
+- **Record Rules**: Foydalanuvchilar o'zlariga tegishli bo'lmagan ma'lumotlarni o'zgartirishdan cheklangan.
 
-## 🏗 Texnologiyalar
+## 📂 O'rnatish
+1. Modulni `addons` papkasiga yuklang.
+2. `__manifest__.py` faylida `base`, `account`, `sale_management` bog'liqliklari borligiga ishonch hosil qiling.
+3. Apps menyusidan modulni o'rnating.
 
-* **Odoo 19.0** (Master version)
-* **Python 3.10+**
-* **PostgreSQL**
 
+# Mini Sales Approval Module
 
----
+Kompaniya ichki nazoratini kuchaytirish uchun 10,000$ dan yuqori bo'lgan barcha savdo buyurtmalarini tasdiqlash tizimi.
 
-### 💡 Eslatma:
+## 🚀 Asosiy Imkoniyatlar
+- **Avtomatik Approval**: 10,000$ dan oshgan buyurtmalar uchun avtomatik ravishda `sale.approval.request` yozuvi yaratiladi.
+- **Process Lock**: Tasdiqlanmagan approval so'rovi bor buyurtmalarni confirm qilib bo'lmaydi.
+- **Auto-Confirm**: Approval so'rovi tasdiqlanganda, tegishli Sale Order avtomatik ravishda `Confirm` holatiga o'tadi.
+- **Reject Reason**: Rad etish (Reject) holatida sababini yozish majburiyati.
 
-Ushbu modul **Odoo 19** muhitida ishlab chiqilgan. Xavfsizlik guruhlari (Access Groups) versiyadagi o'zgarishlar sababli "Technical / Groups" bo'limida boshqariladi.
+## 🛠 Model va Workflow
+- **sale.approval.request**:
+  - `state`: Draft -> Submitted -> Approved/Rejected.
+  - `total_amount`: Sale Order summasidan olingan compute field.
+- **Override logic**: `sale.order` modelidagi `action_confirm()` metodi o'zgartirilgan. Summa limitdan oshsa, status tekshiriladi.
+- **Smart Button**: Sale Order oynasida tegishli approval so'rovini ko'rish uchun maxsus tugma.
+
+## 🔐 Xavfsizlik (Security)
+- **Sales Manager**: So'rovlarni tasdiqlash (Approve) yoki rad etish (Reject) huquqi.
+- **Sales User**: Faqat so'rov yaratish va statusini kuzatish huquqi.
+- **Record Rules**: So'rovlarni tahrirlash faqat `draft` holatida foydalanuvchiga ruxsat etiladi.
+
+## 📊 Holatlar (States)
+- **Draft**: So'rov tayyorlanmoqda.
+- **Submitted**: Menejer tasdig'iga yuborildi.
+- **Approved**: Menejer ruxsat berdi (Sale Order confirm bo'ladi).
+- **Rejected**: Menejer rad etdi (Sabab yozilishi shart).
